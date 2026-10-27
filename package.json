@@ -1,0 +1,38 @@
+{
+  "name": "@sassywares/agents",
+  "version": "0.1.0",
+  "description": "The Sassy subagent roster, one directory per harness: scouting, implementation, review, and validation agents with per-provider model profiles.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Sassywares",
+  "homepage": "https://github.com/sassywares/sassy-agents#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sassywares/sassy-agents.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sassywares/sassy-agents/issues"
+  },
+  "keywords": [
+    "pi",
+    "subagents",
+    "agents",
+    "code-review",
+    "orchestration"
+  ],
+  "files": [
+    "pi",
+    "scripts",
+    "README.md",
+    "CONCEPTS.md",
+    "GROUNDING.md",
+    "NOTICE",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

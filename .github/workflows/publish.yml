@@ -1,0 +1,144 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+# Publishes are serialized. Two tags pushed seconds apart raced once and one
+# version reported success without ever appearing on the registry.
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Check tag matches package version
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$version" != "$tag" ]; then
+            echo "::error::package.json version $version does not match tag $tag"
+            exit 1
+          fi
+
+      # Every release ships from main. A prerelease publishes under its own
+      # dist-tag, so 0.2.0-beta.1 can never become `latest`.
+      - name: Resolve dist-tag
+        id: channel
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor HEAD refs/remotes/origin/main; then
+            echo "::error::release $version is not on main; tag releases from main"
+            exit 1
+          fi
+          if [ "$version" = "${version%%-*}" ]; then
+            echo "dist-tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            tag="${version#*-}"
+            tag="${tag%%.*}"
+            if ! printf '%s' "$tag" | grep -Eq '^[a-z][a-z0-9-]*$'; then
+              echo "::error::cannot derive a dist-tag from version $version"
+              exit 1
+            fi
+            if [ "$tag" = "latest" ]; then
+              echo "::error::a prerelease may not publish to the latest dist-tag"
+              exit 1
+            fi
+            echo "dist-tag=$tag" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate agents
+        run: |
+          shopt -s nullglob
+          files=(pi/*.md)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::no agents found under pi/"
+            exit 1
+          fi
+
+          status=0
+          for agent in "${files[@]}"; do
+            base="$(basename "$agent" .md)"
+            for field in name description; do
+              if ! awk -v f="$field" 'NR==1 && $0!="---" {exit} NR>1 && $0=="---" {exit} NR>1 && index($0, f ":")==1 {found=1} END {exit found?0:1}' "$agent"; then
+                echo "::error file=$agent::missing frontmatter field '$field'"
+                status=1
+              fi
+            done
+
+            declared="$(awk 'NR>1 && $0=="---" {exit} NR>1 && /^name:/ {print $2; exit}' "$agent")"
+            if [ "$declared" != "$base" ]; then
+              echo "::error file=$agent::frontmatter name '$declared' does not match the file name"
+              status=1
+            fi
+
+            if ! grep -Eq '^(profiles|model):' "$agent"; then
+              echo "::error file=$agent::declares neither profiles: nor model:"
+              status=1
+            fi
+
+            if grep -E '^[[:space:]]+model:' "$agent" | grep -qv '/'; then
+              echo "::error file=$agent::every model must be provider/id"
+              status=1
+            fi
+          done
+          exit "$status"
+
+      # Allows the one-time manual bootstrap publish of a new package.
+      - name: Check if the version is already published
+        id: published
+        run: |
+          package="$(node -p "require('./package.json').name")"
+          if npm view "${package}@${GITHUB_REF_NAME#v}" version >/dev/null 2>&1; then
+            echo "already-published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already-published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.published.outputs.already-published != 'true'
+        run: npm publish --tag "${{ steps.channel.outputs.dist-tag }}"
+
+      # The registry accepts a publish before its packument reflects it. Poll the
+      # packument for up to 10 minutes rather than trusting the publish response.
+      - name: Verify the published version resolves
+        if: steps.published.outputs.already-published != 'true'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          package="$(node -p "require('./package.json').name")"
+          url="https://registry.npmjs.org/${package/\//%2F}"
+          for attempt in $(seq 1 20); do
+            if curl -fsS "$url" 2>/dev/null \
+              | VERSION="$version" node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.exit(j.versions&&j.versions[process.env.VERSION]?0:1)}catch{process.exit(1)}})'; then
+              echo "verified ${package}@${version} in the registry packument"
+              exit 0
+            fi
+            echo "attempt ${attempt}: ${version} not in the packument yet, waiting"
+            sleep 30
+          done
+          echo "::error::${package}@${version} published but never appeared in the registry packument"
+          exit 1

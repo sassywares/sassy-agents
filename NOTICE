@@ -1,0 +1,9 @@
+# Notice
+
+The agent definitions under `pi/` are derived from the examples and
+documentation of [pi](https://github.com/earendil-works/pi), Copyright (c) Mario
+Zechner and contributors, licensed under the MIT License.
+
+They have been modified for the Sassywares workflow: the Sassy roster, profile
+selection, and the shared grounding brief. See `LICENSE` for the license
+covering this repository.
