@@ -7,7 +7,7 @@ Every subagent in a run reads one shared grounding brief instead of exploring th
 A per-user temp directory, keyed by the absolute repo or worktree root:
 
 ```bash
-ROOT="/tmp/pi-grounding-$(id -u)"
+ROOT="/tmp/sassy-grounding-$(id -u)"
 [ -L "$ROOT" ] && { echo "unsafe symlink: $ROOT" >&2; exit 1; }
 [ -d "$ROOT" ] || { umask 077; mkdir -p "$ROOT"; }
 chmod 700 "$ROOT" 2>/dev/null
@@ -16,7 +16,7 @@ KEY=$(printf '%s' "$ROOT_ABS" | shasum -a 256 | cut -d' ' -f1)
 BRIEF="$ROOT/$KEY.md"
 ```
 
-For example, `tap2-workspace` resolves to `/tmp/pi-grounding-501/<sha>.md`. The directory is `0700` and owned by the current user; a symlinked or foreign-owned root aborts rather than being followed, because the brief is read as trusted-ish context by later agents.
+For example, `tap2-workspace` resolves to `/tmp/sassy-grounding-501/<sha>.md`. The directory is `0700` and owned by the current user; a symlinked or foreign-owned root aborts rather than being followed, because the brief is read as trusted-ish context by later agents.
 
 Keying on the worktree root means:
 

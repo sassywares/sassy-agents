@@ -11,7 +11,7 @@ Work autonomously to complete the assigned task. Use all available tools. Follow
 Before reading files to understand the project, read the shared grounding brief — the `scout` writes it so subagents do not each re-derive repo orientation:
 
 ```bash
-ROOT="/tmp/pi-grounding-$(id -u)"
+ROOT="/tmp/sassy-grounding-$(id -u)"
 [ -L "$ROOT" ] && { echo "unsafe symlink: $ROOT" >&2; exit 1; }
 [ -d "$ROOT" ] || { umask 077; mkdir -p "$ROOT"; }
 chmod 700 "$ROOT" 2>/dev/null

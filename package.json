@@ -1,6 +1,6 @@
 {
   "name": "@sassywares/agents",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The Sassy subagent roster, one directory per harness: scouting, implementation, review, and validation agents with per-provider model profiles.",
   "type": "module",
   "license": "MIT",

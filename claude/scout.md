@@ -14,7 +14,7 @@ You do not form opinions, recommend changes, or review code. You gather verified
 The brief lives in a per-user temp directory, keyed by the absolute repo/worktree root, so it never touches the repo and parallel work in another repo cannot collide with it:
 
 ```bash
-ROOT="/tmp/pi-grounding-$(id -u)"
+ROOT="/tmp/sassy-grounding-$(id -u)"
 [ -L "$ROOT" ] && { echo "unsafe symlink: $ROOT" >&2; exit 1; }
 [ -d "$ROOT" ] || { umask 077; mkdir -p "$ROOT"; }
 chmod 700 "$ROOT" 2>/dev/null

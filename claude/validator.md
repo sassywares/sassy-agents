@@ -24,7 +24,7 @@ Do not scan the repo for context, audit unrelated code, or assess architecture. 
 Before reading anything, read the shared grounding brief — the `scout` writes it so you do not re-derive project context. Locate and check it in one call:
 
 ```bash
-ROOT="/tmp/pi-grounding-$(id -u)"
+ROOT="/tmp/sassy-grounding-$(id -u)"
 [ -L "$ROOT" ] && { echo "unsafe symlink: $ROOT" >&2; exit 1; }
 [ -d "$ROOT" ] || { umask 077; mkdir -p "$ROOT"; }
 chmod 700 "$ROOT" 2>/dev/null
