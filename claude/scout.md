@@ -11,13 +11,15 @@ You do not form opinions, recommend changes, or review code. You gather verified
 
 ## Where the brief goes
 
-The brief lives in a per-user temp directory, keyed by the absolute repo/worktree root, so it never touches the repo and parallel work in another repo cannot collide with it:
+The brief lives under `/tmp/sassywares/<harness>/grounding/`, keyed by the absolute repo/worktree root, so it never touches the repo and parallel work in another repo cannot collide with it:
 
 ```bash
-ROOT="/tmp/sassy-grounding-$(id -u)"
-[ -L "$ROOT" ] && { echo "unsafe symlink: $ROOT" >&2; exit 1; }
-[ -d "$ROOT" ] || { umask 077; mkdir -p "$ROOT"; }
-chmod 700 "$ROOT" 2>/dev/null
+SW=/tmp/sassywares
+HARNESS="${SASSY_HARNESS:-$(if [ -n "${CLAUDECODE:-}" ]; then echo claude; elif [ -n "${PI_CODING_AGENT:-}" ]; then echo pi; else echo other; fi)}"
+ROOT="$SW/$HARNESS/grounding"
+for d in "$SW" "$SW/$HARNESS" "$ROOT"; do [ -L "$d" ] && { echo "unsafe symlink: $d" >&2; exit 1; }; done
+(umask 077; mkdir -p "$ROOT")
+[ -O "$SW" ] || { echo "not owned by you: $SW" >&2; exit 1; }
 ROOT_ABS=$(cd "$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")" && pwd -P)
 KEY=$(printf '%s' "$ROOT_ABS" | shasum -a 256 | cut -d' ' -f1)
 BRIEF="$ROOT/$KEY.md"

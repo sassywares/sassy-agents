@@ -31,10 +31,12 @@ Everything else is out of scope. Do not grep the repo to orient yourself, do not
 Before reading anything, read the shared grounding brief — the `scout` writes it and it exists so you do not re-derive project context. Locate and check it in one call:
 
 ```bash
-ROOT="/tmp/sassy-grounding-$(id -u)"
-[ -L "$ROOT" ] && { echo "unsafe symlink: $ROOT" >&2; exit 1; }
-[ -d "$ROOT" ] || { umask 077; mkdir -p "$ROOT"; }
-chmod 700 "$ROOT" 2>/dev/null
+SW=/tmp/sassywares
+HARNESS="${SASSY_HARNESS:-$(if [ -n "${CLAUDECODE:-}" ]; then echo claude; elif [ -n "${PI_CODING_AGENT:-}" ]; then echo pi; else echo other; fi)}"
+ROOT="$SW/$HARNESS/grounding"
+for d in "$SW" "$SW/$HARNESS" "$ROOT"; do [ -L "$d" ] && { echo "unsafe symlink: $d" >&2; exit 1; }; done
+(umask 077; mkdir -p "$ROOT")
+[ -O "$SW" ] || { echo "not owned by you: $SW" >&2; exit 1; }
 ROOT_ABS=$(cd "$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")" && pwd -P)
 KEY=$(printf '%s' "$ROOT_ABS" | shasum -a 256 | cut -d' ' -f1)
 BRIEF="$ROOT/$KEY.md"

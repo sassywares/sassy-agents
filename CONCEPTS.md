@@ -30,7 +30,7 @@ Where an agent is discovered from. `user` is `~/.pi/agent/agents/`, the target o
 
 ## Grounding brief
 
-One file per repo or worktree, in a per-user temp directory, written by `scout` and read by every other agent in the run. It carries project evidence with `file:line` citations so consumers do not repeat discovery. Location, freshness, and wait rules are in [GROUNDING.md](GROUNDING.md).
+One file per repo or worktree, under `/tmp/sassywares/<harness>/grounding/`, written by `scout` and read by every other agent in the run. It carries project evidence with `file:line` citations so consumers do not repeat discovery. Location, freshness, and wait rules are in [GROUNDING.md](GROUNDING.md).
 
 ## Subagent
 

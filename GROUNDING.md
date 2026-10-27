@@ -4,19 +4,21 @@ Every subagent in a run reads one shared grounding brief instead of exploring th
 
 ## Location
 
-A per-user temp directory, keyed by the absolute repo or worktree root:
+`/tmp/sassywares/<harness>/grounding/`, keyed by the absolute repo or worktree root. Every Sassywares temp file lives under `/tmp/sassywares/<harness>/<purpose>/`, so `/tmp` itself stays clean and each harness keeps its own folder. The harness is detected from its environment — `CLAUDECODE` for Claude Code, `PI_CODING_AGENT` for pi — and `SASSY_HARNESS` overrides it:
 
 ```bash
-ROOT="/tmp/sassy-grounding-$(id -u)"
-[ -L "$ROOT" ] && { echo "unsafe symlink: $ROOT" >&2; exit 1; }
-[ -d "$ROOT" ] || { umask 077; mkdir -p "$ROOT"; }
-chmod 700 "$ROOT" 2>/dev/null
+SW=/tmp/sassywares
+HARNESS="${SASSY_HARNESS:-$(if [ -n "${CLAUDECODE:-}" ]; then echo claude; elif [ -n "${PI_CODING_AGENT:-}" ]; then echo pi; else echo other; fi)}"
+ROOT="$SW/$HARNESS/grounding"
+for d in "$SW" "$SW/$HARNESS" "$ROOT"; do [ -L "$d" ] && { echo "unsafe symlink: $d" >&2; exit 1; }; done
+(umask 077; mkdir -p "$ROOT")
+[ -O "$SW" ] || { echo "not owned by you: $SW" >&2; exit 1; }
 ROOT_ABS=$(cd "$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")" && pwd -P)
 KEY=$(printf '%s' "$ROOT_ABS" | shasum -a 256 | cut -d' ' -f1)
 BRIEF="$ROOT/$KEY.md"
 ```
 
-For example, `tap2-workspace` resolves to `/tmp/sassy-grounding-501/<sha>.md`. The directory is `0700` and owned by the current user; a symlinked or foreign-owned root aborts rather than being followed, because the brief is read as trusted-ish context by later agents.
+For example, `tap2-workspace` resolves to `/tmp/sassywares/claude/grounding/<sha>.md` under Claude Code. The directories are `0700`; a symlinked directory or a `/tmp/sassywares` owned by someone else aborts rather than being followed, because the brief is read as trusted-ish context by later agents.
 
 Keying on the worktree root means:
 

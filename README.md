@@ -123,7 +123,7 @@ Rules:
 
 ## Grounding brief
 
-Every agent in a run reads one shared brief instead of exploring the repo for itself. `scout` writes it; `worker`, `reviewer`, and `validator` consume it. It lives in a per-user temp directory keyed by the absolute repo or worktree root, so it never touches the repo and two worktrees never collide.
+Every agent in a run reads one shared brief instead of exploring the repo for itself. `scout` writes it; `worker`, `reviewer`, and `validator` consume it. It lives under `/tmp/sassywares/<harness>/grounding/`, keyed by the absolute repo or worktree root, so it never touches the repo and two worktrees never collide.
 
 [GROUNDING.md](GROUNDING.md) defines the location, the freshness check, and the wait rule. A missing or stale brief is reported, never papered over.
 
