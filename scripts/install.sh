@@ -3,10 +3,11 @@
 #
 #   ./scripts/install.sh          # pi, the default
 #   ./scripts/install.sh pi
+#   ./scripts/install.sh claude
 #
-# Pi discovers subagents from <pi agent dir>/agents, so the roster is linked
-# rather than copied: editing this repo changes the running agents, and there
-# is never a second copy to drift.
+# Each harness discovers user-scope subagents from its own directory, so the
+# roster is linked rather than copied: editing this repo changes the running
+# agents, and there is never a second copy to drift.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -16,8 +17,11 @@ case "$HARNESS" in
   pi)
     TARGET="${PI_AGENTS_DIR:-${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}/agents}"
     ;;
+  claude)
+    TARGET="${CLAUDE_AGENTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents}"
+    ;;
   *)
-    echo "sassy-agents: unknown harness '$HARNESS' (supported: pi)" >&2
+    echo "sassy-agents: unknown harness '$HARNESS' (supported: pi, claude)" >&2
     exit 1
     ;;
 esac

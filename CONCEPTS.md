@@ -2,7 +2,7 @@
 
 ## Source of truth
 
-`pi/` is the only copy of the pi roster. `scripts/install.sh` symlinks each file into `~/.pi/agent/agents/`, so the running agents are the working tree. Editing a file takes effect on the next subagent dispatch.
+Each harness directory is the only copy of that harness's roster. `scripts/install.sh <harness>` symlinks each file into the harness's user agent directory (`~/.pi/agent/agents/`, `~/.claude/agents/`), so the running agents are the working tree.
 
 ## Agent
 
@@ -10,7 +10,7 @@ A Markdown file with `name` and `description` frontmatter, plus optional `tools`
 
 ## Harness
 
-A directory at the repo root named after the tool that consumes it: `pi/` for pi. Each harness directory holds that harness's version of the roster. Harnesses differ in frontmatter and discovery, so a role may exist in more than one directory with a harness-appropriate definition.
+A directory at the repo root named after the tool that consumes it: `pi/` for pi, `claude/` for Claude Code. Every harness directory holds the full roster. Harnesses differ in frontmatter and discovery only: an agent's body — what it does — is identical in every harness, and CI fails when it drifts.
 
 ## Roster
 
@@ -42,4 +42,4 @@ A skill from `sassy-skills` that coordinates: it decides which agents to dispatc
 
 ## Upstream derivation
 
-The roster under `pi/` is a modified version of pi's MIT-licensed examples and documentation. `NOTICE` records the attribution; `LICENSE` covers this repository.
+The roster is a modified version of pi's MIT-licensed examples and documentation. `NOTICE` records the attribution; `LICENSE` covers this repository.

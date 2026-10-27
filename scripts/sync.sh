@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Commit, version, push, and tag this repo in one step.
 #
-# The roster is distributed by cloning this repo and linking `pi/` into pi's
-# agent directory with `scripts/install.sh`. The npm package
+# The roster is distributed by cloning this repo and linking a harness folder
+# (`pi/`, `claude/`) into that harness's agent directory with
+# `scripts/install.sh`. The npm package
 # `@sassywares/agents` is a secondary, versioned mirror for consumers that pin
 # a package, and publishing is tag-driven.
 #
@@ -20,7 +21,7 @@ LOCK_DIR="${TMPDIR:-/tmp}/sassy-agents-sync.lock"
 # tooling, CI, or AGENTS.md does not. `package.json` counts whole: it holds the
 # version and the shipped file list, so any edit to it is treated as shipped
 # rather than guessed at.
-PUBLISHED_PATHS=(pi README.md CONCEPTS.md GROUNDING.md NOTICE LICENSE package.json)
+PUBLISHED_PATHS=(pi claude README.md CONCEPTS.md GROUNDING.md NOTICE LICENSE package.json)
 
 die() {
   echo "sassy-agents: $*" >&2
@@ -62,7 +63,7 @@ tag_exists() {
 published_drift() {
   local tag="v$1"
   [ -n "$(git diff --name-only "$tag" -- "${PUBLISHED_PATHS[@]}" 2>/dev/null || true)" ] && return 0
-  [ -n "$(git ls-files --others --exclude-standard -- pi 2>/dev/null || true)" ] && return 0
+  [ -n "$(git ls-files --others --exclude-standard -- pi claude 2>/dev/null || true)" ] && return 0
   return 1
 }
 

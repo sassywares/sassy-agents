@@ -2,15 +2,26 @@
 
 ## What this repo is
 
-This repo is the source of truth for the Sassy subagent roster, laid out one directory per harness. `pi/` is the only harness today.
+This repo is the source of truth for the Sassy subagent roster, laid out one directory per harness: `pi/` and `claude/` (Claude Code).
 
 - Local: `~/Documents/Workspace/Sassywares/sassy-agents`
 - Remote: `sassywares/sassy-agents`
 - Package: `@sassywares/agents`
 
-Consumers clone this repo and run `scripts/install.sh`, which symlinks `pi/*.md` into `~/.pi/agent/agents/`. Do not keep copies anywhere else: pi would load two definitions of the same agent, and the linked one would silently lose.
+Consumers clone this repo and run `scripts/install.sh <harness>`, which symlinks `<harness>/*.md` into that harness's user agent directory (`~/.pi/agent/agents/`, `~/.claude/agents/`). A project may instead vendor a harness folder into its own `.pi/agents/` or `.claude/agents/`; `sassy-setup` in `sassy-skills` offers both. Do not keep a second copy in the same scope: the harness would load two definitions of the same agent, and one would silently lose.
 
-The roster is dispatched by the `subagent` extension in [`sassy-pi-extensions`](https://github.com/sassywares/sassy-pi-extensions). The extension owns discovery, parsing, and profile resolution; this repo owns the agents themselves.
+In pi, the roster is dispatched by the `subagent` extension in [`sassy-pi-extensions`](https://github.com/sassywares/sassy-pi-extensions), which owns discovery, parsing, and profile resolution. In Claude Code, the built-in Agent tool dispatches them by name. This repo owns the agents themselves.
+
+## Harnesses stay in sync
+
+Every harness directory carries the **same roster doing the same job**. The rule is strict:
+
+- **Same agents everywhere.** An agent that exists in one harness directory exists in all of them, under the same file name. Adding or removing an agent is one change across every harness.
+- **The body is identical.** Everything after the closing `---` — the role, scope, rules, grounding, and output format — is byte-for-byte the same file content in every harness. What an agent does never depends on which harness runs it.
+- **Only the frontmatter differs.** Each harness gets the frontmatter it expects: pi takes `tools: read, grep, …` and `profiles:`; Claude Code takes `tools: Read, Grep, …` and a `model:` alias. Translate intent, not text: a read-only agent stays read-only in every harness, and model tiers map across (the pi `anthropic` profile's model is the Claude Code `model:`).
+- **Edit once, copy across.** Change the body in one harness, then copy it to the others in the same commit. Never let a harness carry a fix the others lack.
+
+CI enforces this: `publish.yml` fails when an agent is missing from a harness or when two harnesses' bodies differ.
 
 ## Branches: `main` only
 
@@ -43,6 +54,8 @@ sassy-agents/
 │   ├── scout.md
 │   ├── validator.md
 │   └── worker.md
+├── claude/
+│   └── (same four agents, Claude Code frontmatter)
 ├── scripts/
 │   ├── install.sh
 │   ├── sync.sh
@@ -61,21 +74,24 @@ sassy-agents/
 | Path | Role |
 |---|---|
 | `pi/*.md` | The pi roster. Linked into `~/.pi/agent/agents/`. |
+| `claude/*.md` | The Claude Code roster. Linked into `~/.claude/agents/`. |
 | `scripts/install.sh` | Symlinks one harness's agents into that harness's user directory. |
 | `scripts/sync.sh` | Bumps, commits, pushes, tags, and releases. See [Sync](#sync). |
 | `scripts/test-profiles.mjs` | Checks agent parsing and profile resolution against the real roster plus malformed fixtures. |
-| `.github/workflows/publish.yml` | Validates the roster, then publishes on a `v*` tag. |
+| `.github/workflows/publish.yml` | Validates every harness's roster and their sync, then publishes on a `v*` tag. |
 | `GROUNDING.md` | The shared grounding brief contract every roster agent follows. |
-| `package.json` | npm mirror manifest. Ships `pi/`, `scripts/`, and the docs. |
+| `package.json` | npm mirror manifest. Ships `pi/`, `claude/`, `scripts/`, and the docs. |
 
 `package.json` deliberately has no `pi` manifest: pi does not load agents from packages, so the roster is linked, not installed. The npm package is a versioned mirror for consumers that pin a version.
 
 ## Adding or editing an agent
 
-1. Create or edit `pi/<name>.md` with `name`, `description`, optional `tools`, and either a `profiles:` list or a pinned `model:`.
+1. Create or edit the agent in **every** harness directory (see [Harnesses stay in sync](#harnesses-stay-in-sync)):
+   - `pi/<name>.md` — `name`, `description`, optional `tools`, and either a `profiles:` list or a pinned `model:`.
+   - `claude/<name>.md` — `name`, `description`, optional `tools` (Claude Code tool names; omit to inherit all), and `model:` (`haiku`, `sonnet`, `opus`, or `inherit`).
 2. Keep the frontmatter `name` equal to the file name; CI checks it.
-3. Keep the body focused on the role, hard rules, scope, and return shape.
-4. Run `./scripts/install.sh` once if the agent is new.
+3. Keep the body focused on the role, hard rules, scope, and return shape — and identical across harnesses.
+4. Run `./scripts/install.sh <harness>` once per harness if the agent is new.
 5. Update the roster table in `README.md`.
 6. Run `./scripts/test-profiles.mjs` when parsing or profiles changed.
 7. Run `./scripts/sync.sh` immediately. Do not ask the user first.
@@ -103,15 +119,17 @@ Rules:
 
 ## Adding a harness
 
-1. Create `<harness>/` with that harness's agent files.
+1. Create `<harness>/` with the full roster: every agent, each body copied verbatim from `pi/`, frontmatter written for that harness.
 2. Teach `scripts/install.sh` about the harness in its `case`, with an explicit target directory. Unknown harnesses must fail, never guess.
-3. Document the layout in `README.md` and `CONCEPTS.md`.
-4. Add the directory to `files` in `package.json`, and to the `pi` path in `scripts/sync.sh` if it ships.
+3. Add the directory to `harnesses` in `publish.yml`'s validation step so the sync check covers it.
+4. Document the layout in `README.md` and `CONCEPTS.md`.
+5. Add the directory to `files` in `package.json` and to `PUBLISHED_PATHS` (and the untracked-file check) in `scripts/sync.sh`.
+6. Teach `sassy-setup` in `sassy-skills` the harness's user and project agent directories.
 
 ## Editing or removing
 
-- Edit the files under `pi/`.
-- To remove an agent, delete `pi/<name>.md` and its symlink under `~/.pi/agent/agents/`.
+- Edit the agent in every harness directory in the same change.
+- To remove an agent, delete `<harness>/<name>.md` from every harness, and its symlink under each harness's user agent directory.
 - Do not create per-agent copies. `scripts/install.sh` is the only install path.
 - Do not add a build step. Agents are plain Markdown.
 
@@ -119,12 +137,13 @@ Rules:
 
 There is no test runner. Verify manually:
 
-- `./scripts/install.sh` links every `pi/*.md` into `~/.pi/agent/agents/`.
+- `./scripts/install.sh` links every `pi/*.md` into `~/.pi/agent/agents/`; `./scripts/install.sh claude` links every `claude/*.md` into `~/.claude/agents/`.
+- In Claude Code, `/agents` lists `scout`, `worker`, `reviewer`, and `validator`.
 - `pi -e ~/Documents/Workspace/Sassywares/sassy-pi-extensions` loads, and `subagent` lists every roster agent.
 - `./scripts/test-profiles.mjs` passes; it covers agent parsing, profile precedence, and the error for a missing profile. It needs a `sassy-pi-extensions` checkout (sibling, `PI_EXTENSIONS_DIR`, or an install).
 - A dispatch with `profile: "anthropic"` runs the Anthropic model shown in the run line, and the same dispatch with `profile: "nope"` fails with the available profile names.
 - `PI_SASSY_PROFILE=anthropic` and `{"sassy":{"profile":"anthropic"}}` in `<project>/.pi/settings.json` both select Anthropic without a parameter.
-- Reviewer and validator refuse to write.
+- Reviewer and validator refuse to write, in every harness.
 
 ## Sync
 
@@ -132,7 +151,7 @@ There is no background watcher. Any agent that adds, edits, or removes an agent 
 
 The sync script, in one unattended step:
 
-1. Bumps the patch version when anything consumers receive changed since the last tag — `pi/`, `README.md`, `CONCEPTS.md`, `GROUNDING.md`, `NOTICE`, `LICENSE`, or `package.json`. A change to tooling, CI, or `AGENTS.md` commits without a version, because nothing a consumer links changed.
+1. Bumps the patch version when anything consumers receive changed since the last tag — `pi/`, `claude/`, `README.md`, `CONCEPTS.md`, `GROUNDING.md`, `NOTICE`, `LICENSE`, or `package.json`. A change to tooling, CI, or `AGENTS.md` commits without a version, because nothing a consumer links changed.
 2. Commits every repo change with a `chore: sync agents <timestamp> (v<version>)` message.
 3. Pushes the branch, then tags and pushes `v<version>`.
 4. If the current version is already bumped but untagged — an interrupted run, or a hand-written bump — it tags that version instead of bumping again.
@@ -147,7 +166,7 @@ If a push fails, the local commit remains, the script exits non-zero, and the ne
 
 ## Publishing
 
-Publishing is tag-driven. `.github/workflows/publish.yml` validates every `pi/*.md`, checks that the tag matches `package.json`, requires the tagged commit to be an ancestor of `main`, and publishes `@sassywares/agents` with provenance through npm trusted publishing (OIDC). There is no `NPM_TOKEN` secret.
+Publishing is tag-driven. `.github/workflows/publish.yml` validates every harness's agents and that their bodies match, checks that the tag matches `package.json`, requires the tagged commit to be an ancestor of `main`, and publishes `@sassywares/agents` with provenance through npm trusted publishing (OIDC). There is no `NPM_TOKEN` secret.
 
 Release checklist (from `main`):
 
@@ -165,9 +184,10 @@ The first publish needs a one-time manual bootstrap (`npm publish --access publi
 
 ## Conventions
 
-- **Roster for a role, not a provider.** One file per job; provider differences live in `profiles:`.
+- **Roster for a role, not a provider.** One file per job per harness; provider differences live in frontmatter.
+- **One behavior across harnesses.** Bodies are identical; only frontmatter is harness-specific.
 - **Read-only reviews.** Reviewer and validator never write, so a review cannot change the diff it judges.
 - **Shared grounding.** Agents read the brief, not the repository. See `GROUNDING.md`.
 - **No secrets.** Never put credentials, tokens, or private keys in an agent.
-- **No copies.** The linked checkout is the only roster; remove any duplicate under `~/.pi/agent/agents/`.
-- **Attribute upstream.** The `pi/` roster is derived from pi. Keep `NOTICE` current when it changes.
+- **No copies within a scope.** The linked checkout is the only user-scope roster; remove any duplicate under a harness's user agent directory.
+- **Attribute upstream.** The roster is derived from pi. Keep `NOTICE` current when it changes.

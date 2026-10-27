@@ -1,6 +1,6 @@
 # Notice
 
-The agent definitions under `pi/` are derived from the examples and
+The agent definitions under `pi/` and `claude/` are derived from the examples and
 documentation of [pi](https://github.com/earendil-works/pi), Copyright (c) Mario
 Zechner and contributors, licensed under the MIT License.
 

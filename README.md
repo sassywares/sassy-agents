@@ -1,6 +1,6 @@
 # Sassy Agents
 
-**The Sassy subagent roster — one directory per harness, one roster on every provider.**
+**The Sassy subagent roster — one directory per harness, one behavior in every harness, one roster on every provider.**
 
 Sassy Agents is the source of truth for the subagents the Sassywares workflow dispatches: a grounding scout, an implementation worker, a reviewer, and a validator. Each agent is a Markdown file with frontmatter; each declares a `profiles:` list, so the same roster runs on DeepSeek by default and on Anthropic when a project opts in.
 
@@ -32,12 +32,15 @@ The repo is `sassy-agents`. The npm mirror is `@sassywares/agents`.
 
 ## Quick start
 
-Clone the repo next to your work and link the pi roster:
+Clone the repo next to your work and link the roster for your harness:
 
 ```bash
 git clone https://github.com/sassywares/sassy-agents.git
-./sassy-agents/scripts/install.sh
+./sassy-agents/scripts/install.sh          # pi → ~/.pi/agent/agents/
+./sassy-agents/scripts/install.sh claude   # Claude Code → ~/.claude/agents/
 ```
+
+`sassy-setup` (in `sassy-skills`) checks for the roster and offers this link, or a per-project copy into `.pi/agents/` / `.claude/agents/`.
 
 `install.sh` symlinks `pi/*.md` into `~/.pi/agent/agents/`. Editing this repo changes the running agents on the next subagent invocation — there is no copy to keep in sync.
 
@@ -60,18 +63,20 @@ Pi does not load agents from packages on its own; the link step is what makes th
 
 ## Agents
 
-| Agent | Role | `deepseek` profile | `anthropic` profile |
-|---|---|---|---|
-| `scout` | Grounding scout: writes the shared grounding brief other agents read, including matching prior learnings from the project's `.sassywares/config.yaml` knowledge paths. | `deepseek/deepseek-flash` | `anthropic/claude-haiku-4-5` |
-| `worker` | General-purpose implementation in an isolated context. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` |
-| `reviewer` | Quality, correctness, security, project-rule, and design-system review, diff-scoped. | `deepseek/deepseek-flash` | `anthropic/claude-opus-4-5` |
-| `validator` | Checks that the diff matches the plan, independent of review. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` |
+| Agent | Role | pi `deepseek` profile | pi `anthropic` profile | Claude Code `model` |
+|---|---|---|---|---|
+| `scout` | Grounding scout: writes the shared grounding brief other agents read, including matching prior learnings from the project's `.sassywares/config.yaml` knowledge paths. | `deepseek/deepseek-flash` | `anthropic/claude-haiku-4-5` | `haiku` |
+| `worker` | General-purpose implementation in an isolated context. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` | `sonnet` |
+| `reviewer` | Quality, correctness, security, project-rule, and design-system review, diff-scoped. | `deepseek/deepseek-flash` | `anthropic/claude-opus-4-5` | `opus` |
+| `validator` | Checks that the diff matches the plan, independent of review. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` | `sonnet` |
 
-Each file's body is the system prompt. Keep it to the role, hard rules, scope, and return shape — the orchestrating skill supplies the task.
+Each file's body is the system prompt. Keep it to the role, hard rules, scope, and return shape — the orchestrating skill supplies the task. The body is identical in every harness directory; only the frontmatter is harness-specific, and CI fails on drift.
 
 ## How agents are found
 
-The `subagent` extension discovers agents from:
+Claude Code discovers agents from `~/.claude/agents/` (user) and the project's `.claude/agents/` (project, which wins on a name clash).
+
+In pi, the `subagent` extension discovers agents from:
 
 - `~/.pi/agent/agents/` — user scope, where `scripts/install.sh` links this roster.
 - The nearest project `.pi/agents/` — project scope, which overrides a user agent with the same name.
@@ -124,7 +129,7 @@ Every agent in a run reads one shared brief instead of exploring the repo for it
 
 ## Harness layout
 
-One directory per harness. Only `pi/` exists today; the layout leaves room for others without changing the roster's meaning.
+One directory per harness: `pi/` and `claude/`. Every directory carries the full roster with identical bodies; only frontmatter differs.
 
 ```text
 sassy-agents/
@@ -133,6 +138,7 @@ sassy-agents/
 │   ├── worker.md
 │   ├── reviewer.md
 │   └── validator.md
+├── claude/              # Claude Code subagent definitions (same four)
 ├── scripts/
 │   ├── install.sh       # links one harness's agents into place
 │   ├── sync.sh          # bump, commit, push, tag
@@ -140,23 +146,25 @@ sassy-agents/
 └── …
 ```
 
-`scripts/install.sh <harness>` defaults to `pi` and rejects a harness it does not know, rather than guessing a target directory.
+`scripts/install.sh <harness>` takes `pi` (the default) or `claude` and rejects a harness it does not know, rather than guessing a target directory.
 
 ## Adding or editing an agent
 
-1. Create or edit `pi/<name>.md` with `name`, `description`, optional `tools`, and either a `profiles:` list or a pinned `model:`.
+1. Create or edit the agent in every harness directory: `pi/<name>.md` (`profiles:` or a pinned `model:`) and `claude/<name>.md` (Claude Code `tools` and a `model:` alias).
 2. Keep the frontmatter `name` equal to the file name.
-3. Keep the body focused on the role, hard rules, scope, and return shape.
+3. Keep the body focused on the role, hard rules, scope, and return shape — and byte-identical across harnesses.
 4. Update the roster table in `README.md`.
 5. Run `./scripts/install.sh` once if the agent is new, then `./scripts/sync.sh` to commit and release.
 
-Agents that write should say so in `tools:`: `scout` needs `write` for the brief, `worker` needs the full toolset. Reviewer and validator stay read-only so a review cannot change the diff it is judging.
+Agents that write should say so in `tools:`: `scout` needs `write` (`Write` in Claude Code) for the brief, `worker` needs the full toolset. Reviewer and validator stay read-only so a review cannot change the diff it is judging.
 
 ## Repository layout
 
 ```text
 sassy-agents/
 ├── pi/
+│   └── *.md
+├── claude/
 │   └── *.md
 ├── scripts/
 │   ├── install.sh
@@ -176,6 +184,7 @@ sassy-agents/
 | Path | Role |
 |---|---|
 | `pi/*.md` | The pi roster. Linked into `~/.pi/agent/agents/`. |
+| `claude/*.md` | The Claude Code roster. Linked into `~/.claude/agents/`. |
 | `scripts/install.sh` | Symlinks one harness's agents into that harness's user directory. |
 | `scripts/sync.sh` | Bumps, commits, pushes, tags, and releases. |
 | `scripts/test-profiles.mjs` | Checks agent parsing and profile resolution against the real roster plus malformed fixtures. |
@@ -211,7 +220,7 @@ Releases only happen on `main`. On any other branch the script commits and pushe
 
 ### Releasing
 
-Publishing is tag-driven and uses npm trusted publishing (OIDC). `publish.yml` validates every `pi/*.md`, checks that the tag matches `package.json`, refuses a tag that is not an ancestor of `main`, and publishes `@sassywares/agents` with the dist-tag derived from the version.
+Publishing is tag-driven and uses npm trusted publishing (OIDC). `publish.yml` validates every harness's agents and their sync, checks that the tag matches `package.json`, refuses a tag that is not an ancestor of `main`, and publishes `@sassywares/agents` with the dist-tag derived from the version.
 
 `scripts/sync.sh` does this for you on `main`. The manual sequence is the fallback for recovering a failed run:
 
@@ -227,4 +236,4 @@ The first publish of a new package needs a manual `npm publish --access public` 
 
 ## Provenance
 
-The agent definitions under `pi/` are derived from pi's MIT-licensed examples and documentation, modified for this workflow. See [NOTICE](NOTICE).
+The agent definitions under `pi/` and `claude/` are derived from pi's MIT-licensed examples and documentation, modified for this workflow. See [NOTICE](NOTICE).

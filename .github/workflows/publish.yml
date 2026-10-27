@@ -74,28 +74,36 @@ jobs:
       - name: Validate agents
         run: |
           shopt -s nullglob
-          files=(pi/*.md)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "::error::no agents found under pi/"
-            exit 1
-          fi
-
+          harnesses=(pi claude)
           status=0
-          for agent in "${files[@]}"; do
-            base="$(basename "$agent" .md)"
-            for field in name description; do
-              if ! awk -v f="$field" 'NR==1 && $0!="---" {exit} NR>1 && $0=="---" {exit} NR>1 && index($0, f ":")==1 {found=1} END {exit found?0:1}' "$agent"; then
-                echo "::error file=$agent::missing frontmatter field '$field'"
+
+          for harness in "${harnesses[@]}"; do
+            files=("$harness"/*.md)
+            if [ ${#files[@]} -eq 0 ]; then
+              echo "::error::no agents found under $harness/"
+              status=1
+              continue
+            fi
+
+            for agent in "${files[@]}"; do
+              base="$(basename "$agent" .md)"
+              for field in name description; do
+                if ! awk -v f="$field" 'NR==1 && $0!="---" {exit} NR>1 && $0=="---" {exit} NR>1 && index($0, f ":")==1 {found=1} END {exit found?0:1}' "$agent"; then
+                  echo "::error file=$agent::missing frontmatter field '$field'"
+                  status=1
+                fi
+              done
+
+              declared="$(awk 'NR>1 && $0=="---" {exit} NR>1 && /^name:/ {print $2; exit}' "$agent")"
+              if [ "$declared" != "$base" ]; then
+                echo "::error file=$agent::frontmatter name '$declared' does not match the file name"
                 status=1
               fi
             done
+          done
 
-            declared="$(awk 'NR>1 && $0=="---" {exit} NR>1 && /^name:/ {print $2; exit}' "$agent")"
-            if [ "$declared" != "$base" ]; then
-              echo "::error file=$agent::frontmatter name '$declared' does not match the file name"
-              status=1
-            fi
-
+          # pi-only frontmatter: model selection through profiles or a pinned provider/id.
+          for agent in pi/*.md; do
             if ! grep -Eq '^(profiles|model):' "$agent"; then
               echo "::error file=$agent::declares neither profiles: nor model:"
               status=1
@@ -105,6 +113,30 @@ jobs:
               echo "::error file=$agent::every model must be provider/id"
               status=1
             fi
+          done
+
+          # Every harness carries the same roster, and every agent does the same
+          # job everywhere: only the frontmatter may differ.
+          body() { awk 'c>=2 {print} /^---$/ {c++}' "$1"; }
+          for agent in pi/*.md; do
+            name="$(basename "$agent")"
+            for harness in "${harnesses[@]}"; do
+              [ "$harness" = pi ] && continue
+              other="$harness/$name"
+              if [ ! -f "$other" ]; then
+                echo "::error file=$agent::$name is missing from $harness/"
+                status=1
+              elif ! cmp -s <(body "$agent") <(body "$other"); then
+                echo "::error file=$other::body differs from $agent; only frontmatter may differ between harnesses"
+                status=1
+              fi
+            done
+          done
+          for harness in "${harnesses[@]}"; do
+            [ "$harness" = pi ] && continue
+            for agent in "$harness"/*.md; do
+              [ -f "pi/$(basename "$agent")" ] || { echo "::error file=$agent::$(basename "$agent") is missing from pi/"; status=1; }
+            done
           done
           exit "$status"
 
