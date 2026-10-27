@@ -119,6 +119,17 @@ jobs:
             echo "already-published=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # OIDC cannot publish a package's first version: there is no settings page
+      # to configure a trusted publisher until the package exists.
+      - name: Require a bootstrap publish for a new package
+        if: steps.published.outputs.already-published != 'true'
+        run: |
+          package="$(node -p "require('./package.json').name")"
+          if ! npm view "$package" version >/dev/null 2>&1; then
+            echo "::error::$package is not on npm yet; run 'npm publish --access public' once from a clean checkout, configure the trusted publisher, then re-run this workflow."
+            exit 1
+          fi
+
       - name: Publish to npm
         if: steps.published.outputs.already-published != 'true'
         run: npm publish --tag "${{ steps.channel.outputs.dist-tag }}"

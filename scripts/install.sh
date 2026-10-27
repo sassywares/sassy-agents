@@ -31,8 +31,15 @@ fi
 
 mkdir -p "$TARGET"
 
+shopt -s nullglob
+agents=("$SRC"/*.md)
+if [ ${#agents[@]} -eq 0 ]; then
+  echo "sassy-agents: no agents found under $SRC" >&2
+  exit 1
+fi
+
 # One symlink per agent keeps the directory writable for personal agents.
-for src in "$SRC"/*.md; do
+for src in "${agents[@]}"; do
   name="$(basename "$src")"
   dest="$TARGET/$name"
 
