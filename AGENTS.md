@@ -52,10 +52,11 @@ sassy-agents/
 ├── pi/
 │   ├── reviewer.md
 │   ├── scout.md
+│   ├── simplifier.md
 │   ├── validator.md
 │   └── worker.md
 ├── claude/
-│   └── (same four agents, Claude Code frontmatter)
+│   └── (same five agents, Claude Code frontmatter)
 ├── scripts/
 │   ├── install.sh
 │   ├── sync.sh
@@ -115,7 +116,7 @@ Rules:
 - `profiles:` and `model:` are mutually exclusive — pinning a model and offering profiles at once is a parse error.
 - A pinned `model:` (plus optional `thinking:`) is still supported for personal agents and ignores profile selection.
 - Neither key means the agent inherits the dispatcher's model and thinking.
-- Reviewer and validator stay read-only. Do not add `write`, `edit`, or `codemode` to them.
+- Reviewer, simplifier, and validator stay read-only. Do not add `write`, `edit`, or `codemode` to them.
 
 ## Adding a harness
 
@@ -138,12 +139,12 @@ Rules:
 There is no test runner. Verify manually:
 
 - `./scripts/install.sh` links every `pi/*.md` into `~/.pi/agent/agents/`; `./scripts/install.sh claude` links every `claude/*.md` into `~/.claude/agents/`.
-- In Claude Code, `/agents` lists `scout`, `worker`, `reviewer`, and `validator`.
+- In Claude Code, `/agents` lists `scout`, `worker`, `reviewer`, `simplifier`, and `validator`.
 - `pi -e ~/Documents/Workspace/Sassywares/sassy-pi-extensions` loads, and `subagent` lists every roster agent.
 - `./scripts/test-profiles.mjs` passes; it covers agent parsing, profile precedence, and the error for a missing profile. It needs a `sassy-pi-extensions` checkout (sibling, `PI_EXTENSIONS_DIR`, or an install).
 - A dispatch with `profile: "anthropic"` runs the Anthropic model shown in the run line, and the same dispatch with `profile: "nope"` fails with the available profile names.
 - `PI_SASSY_PROFILE=anthropic` and `{"sassy":{"profile":"anthropic"}}` in `<project>/.pi/settings.json` both select Anthropic without a parameter.
-- Reviewer and validator refuse to write, in every harness.
+- Reviewer, simplifier, and validator refuse to write, in every harness.
 
 ## Sync
 
@@ -186,7 +187,7 @@ The first publish needs a one-time manual bootstrap (`npm publish --access publi
 
 - **Roster for a role, not a provider.** One file per job per harness; provider differences live in frontmatter.
 - **One behavior across harnesses.** Bodies are identical; only frontmatter is harness-specific.
-- **Read-only reviews.** Reviewer and validator never write, so a review cannot change the diff it judges.
+- **Read-only reviews.** Reviewer, simplifier, and validator never write, so a review cannot change the diff it judges.
 - **Shared grounding.** Agents read the brief, not the repository. See `GROUNDING.md`.
 - **No secrets.** Never put credentials, tokens, or private keys in an agent.
 - **No copies within a scope.** The linked checkout is the only user-scope roster; remove any duplicate under a harness's user agent directory.

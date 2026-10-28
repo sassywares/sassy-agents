@@ -14,7 +14,7 @@ A directory at the repo root named after the tool that consumes it: `pi/` for pi
 
 ## Roster
 
-The four agents shipped here — `scout`, `worker`, `reviewer`, `validator` — and the contract that they cover a unit of work end to end: ground it, implement it, review it, validate it against intent.
+The five agents shipped here — `scout`, `worker`, `reviewer`, `simplifier`, `validator` — and the contract that they cover a unit of work end to end: ground it, implement it, review it, simplify it, validate it against intent.
 
 ## Profile
 

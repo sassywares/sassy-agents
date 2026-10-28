@@ -1,6 +1,6 @@
 # Grounding brief
 
-Every subagent in a run reads one shared grounding brief instead of exploring the repo for itself. `scout` writes it; `reviewer`, `validator`, and `worker` consume it.
+Every subagent in a run reads one shared grounding brief instead of exploring the repo for itself. `scout` writes it; `reviewer`, `simplifier`, `validator`, and `worker` consume it.
 
 ## Location
 

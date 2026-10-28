@@ -2,7 +2,7 @@
 
 **The Sassy subagent roster — one directory per harness, one behavior in every harness, one roster on every provider.**
 
-Sassy Agents is the source of truth for the subagents the Sassywares workflow dispatches: a grounding scout, an implementation worker, a reviewer, and a validator. Each agent is a Markdown file with frontmatter; each declares a `profiles:` list, so the same roster runs on DeepSeek by default and on Anthropic when a project opts in.
+Sassy Agents is the source of truth for the subagents the Sassywares workflow dispatches: a grounding scout, an implementation worker, a reviewer, a simplifier, and a validator. Each agent is a Markdown file with frontmatter; each declares a `profiles:` list, so the same roster runs on DeepSeek by default and on Anthropic when a project opts in.
 
 The repo is `sassy-agents`. The npm mirror is `@sassywares/agents`.
 
@@ -23,12 +23,12 @@ The repo is `sassy-agents`. The npm mirror is `@sassywares/agents`.
 
 ## Why this roster
 
-- **One job per agent.** Scout grounds, worker implements, reviewer judges quality, validator judges intent. None of them re-does another's work.
+- **One job per agent.** Scout grounds, worker implements, reviewer judges correctness and conformance, simplifier finds simpler code, validator judges intent. None of them re-does another's work.
 - **Isolated context.** Each is dispatched by the `subagent` tool from [`sassy-pi-extensions`](https://github.com/sassywares/sassy-pi-extensions), so each gets its own context window and returns a compact result.
 - **Provider-agnostic.** Model choice lives in frontmatter `profiles:`, not in a branch or a separate roster. Swapping providers is a settings change.
-- **Read-only by default.** Reviewer and validator get `read, grep, find, ls, bash`; only scout and worker can write.
+- **Read-only by default.** Reviewer, simplifier, and validator get `read, grep, find, ls, bash`; only scout and worker can write.
 - **Shared grounding.** Every agent reads one brief written by `scout` instead of re-exploring the repo. See [GROUNDING.md](GROUNDING.md).
-- **Composable with [`sassy-skills`](https://github.com/sassywares/sassy-skills).** The skills dispatch these agents by name — `scout`, `worker`, `reviewer`, `validator`.
+- **Composable with [`sassy-skills`](https://github.com/sassywares/sassy-skills).** The skills dispatch these agents by name — `scout`, `worker`, `reviewer`, `simplifier`, `validator`.
 
 ## Quick start
 
@@ -67,7 +67,8 @@ Pi does not load agents from packages on its own; the link step is what makes th
 |---|---|---|---|---|
 | `scout` | Grounding scout: writes the shared grounding brief other agents read, including matching prior learnings from the project's `.sassywares/config.yaml` knowledge paths. | `deepseek/deepseek-flash` | `anthropic/claude-haiku-4-5` | `haiku` |
 | `worker` | General-purpose implementation in an isolated context. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` | `sonnet` |
-| `reviewer` | Quality, correctness, security, project-rule, and design-system review, diff-scoped. | `deepseek/deepseek-flash` | `anthropic/claude-opus-4-5` | `opus` |
+| `reviewer` | Correctness, security, project-rule, and design-system review, plus risk lenses (security, migrations, API contracts, concurrency) when the diff touches them; diff-scoped. | `deepseek/deepseek-flash` | `anthropic/claude-opus-4-5` | `opus` |
+| `simplifier` | Behavior-preserving simplification of the diff — reuse, quality, efficiency. Finds only; never edits. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` | `sonnet` |
 | `validator` | Checks that the diff matches the plan, independent of review. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` | `sonnet` |
 
 Each file's body is the system prompt. Keep it to the role, hard rules, scope, and return shape — the orchestrating skill supplies the task. The body is identical in every harness directory; only the frontmatter is harness-specific, and CI fails on drift.
@@ -123,7 +124,7 @@ Rules:
 
 ## Grounding brief
 
-Every agent in a run reads one shared brief instead of exploring the repo for itself. `scout` writes it; `worker`, `reviewer`, and `validator` consume it. It lives under `/tmp/sassywares/<harness>/grounding/`, keyed by the absolute repo or worktree root, so it never touches the repo and two worktrees never collide.
+Every agent in a run reads one shared brief instead of exploring the repo for itself. `scout` writes it; `worker`, `reviewer`, `simplifier`, and `validator` consume it. It lives under `/tmp/sassywares/<harness>/grounding/`, keyed by the absolute repo or worktree root, so it never touches the repo and two worktrees never collide.
 
 [GROUNDING.md](GROUNDING.md) defines the location, the freshness check, and the wait rule. A missing or stale brief is reported, never papered over.
 
@@ -137,8 +138,9 @@ sassy-agents/
 │   ├── scout.md
 │   ├── worker.md
 │   ├── reviewer.md
+│   ├── simplifier.md
 │   └── validator.md
-├── claude/              # Claude Code subagent definitions (same four)
+├── claude/              # Claude Code subagent definitions (same five)
 ├── scripts/
 │   ├── install.sh       # links one harness's agents into place
 │   ├── sync.sh          # bump, commit, push, tag
@@ -156,7 +158,7 @@ sassy-agents/
 4. Update the roster table in `README.md`.
 5. Run `./scripts/install.sh` once if the agent is new, then `./scripts/sync.sh` to commit and release.
 
-Agents that write should say so in `tools:`: `scout` needs `write` (`Write` in Claude Code) for the brief, `worker` needs the full toolset. Reviewer and validator stay read-only so a review cannot change the diff it is judging.
+Agents that write should say so in `tools:`: `scout` needs `write` (`Write` in Claude Code) for the brief, `worker` needs the full toolset. Reviewer, simplifier, and validator stay read-only so a review cannot change the diff it is judging.
 
 ## Repository layout
 
