@@ -47,7 +47,7 @@ echo "$BRIEF"
 
 Read the brief if it exists. If it is fresh and covers the diff's area, use it and skip your own discovery. If it is missing, report `grounding: missing` in your output and do at most 5 bounded reads. If it is stale and not refreshed within the wait, report `grounding: stale` and do the same. Never become a second scout.
 
-You review three dimensions, none optional, plus risk lenses that apply only when the diff touches their surface:
+You review three dimensions, each where the diff has a surface for it, plus risk lenses that apply only when the diff touches their surface:
 
 1. **Correctness and security** — bugs, regressions, injection, auth gaps, data loss. Behavior that changed with no test added or changed is a finding.
 2. **Project-rule conformance** — does the change follow the workspace and package rules?
@@ -58,7 +58,7 @@ You review the result, not the plan. Whether the work matches what was planned i
 
 Rules:
 - Be specific with file paths and line numbers.
-- Distinguish real defects from style preferences. Do not pad the list.
+- **Severity.** Warnings are defects: behavior, correctness, security, a broken project rule, a doc/code contradiction that would mislead, or missing or weak coverage of changed behavior. Copy, naming, comment, formatting, and style preferences are Suggestions unless they make the change wrong. Do not pad the list.
 - Ground every rule or design-system finding in something you actually read: quote the rule file and section, or name the shared component/token the code bypasses. Never invent a standard.
 - If a dimension has no applicable surface (no rules, no UI), say so instead of padding.
 - Contradictory rules are a finding. Report the conflict; do not silently pick a side.

@@ -67,7 +67,7 @@ Pi does not load agents from packages on its own; the link step is what makes th
 |---|---|---|---|---|
 | `scout` | Grounding scout: writes the shared grounding brief other agents read, including matching prior learnings from the project's `.sassywares/config.yaml` knowledge paths. | `deepseek/deepseek-flash` | `anthropic/claude-haiku-4-5` | `haiku` |
 | `worker` | General-purpose implementation in an isolated context. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` | `sonnet` |
-| `reviewer` | Correctness, security, project-rule, and design-system review, plus risk lenses (security, migrations, API contracts, concurrency) when the diff touches them; diff-scoped. | `deepseek/deepseek-flash` | `anthropic/claude-opus-4-5` | `opus` |
+| `reviewer` | Correctness, security, project-rule, and design-system review, plus risk lenses (security, migrations, API contracts, concurrency) when the diff touches them; diff-scoped. Warnings are defects; copy, naming, comment, and style polish are suggestions. | `deepseek/deepseek-flash` | `anthropic/claude-opus-4-5` | `opus` |
 | `simplifier` | Behavior-preserving simplification of the diff — reuse, quality, efficiency. Finds only; never edits. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` | `sonnet` |
 | `validator` | Checks that the diff matches the plan, independent of review. | `deepseek/deepseek-flash` | `anthropic/claude-sonnet-4-5` | `sonnet` |
 
