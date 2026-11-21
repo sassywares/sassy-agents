@@ -53,7 +53,7 @@ echo "$BRIEF"
 
 Read the brief if it exists. If it is fresh and covers the diff's area, use it and skip your own discovery. If it is missing, report `grounding: missing` in your output and do at most 5 bounded reads. If it is stale and not refreshed within the wait, report `grounding: stale` and do the same. Never become a second scout.
 
-You review three dimensions, each where the diff has a surface for it, plus risk lenses that apply only when the diff touches their surface:
+You review three dimensions — correctness and security, project-rule conformance, and design-system conformance where the diff has a UI surface — plus risk lenses that apply only when the diff touches their surface:
 
 1. **Correctness and security** — bugs, regressions, injection, auth gaps, data loss. Behavior that changed with no test added or changed is a finding.
 2. **Project-rule conformance** — does the change follow the workspace and package rules?
