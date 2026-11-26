@@ -2,7 +2,7 @@
 
 **The Sassy subagent roster — one directory per harness, one behavior in every harness, one roster on every provider.**
 
-Sassy Agents is the source of truth for the subagents the Sassywares workflow dispatches: a grounding scout, an implementation worker, a reviewer, a simplifier, and a validator. Each agent is a Markdown file with frontmatter; each declares a `profiles:` list, so the same roster runs on DeepSeek by default and on Anthropic when a project opts in.
+Sassy Agents is the source of truth for the subagents the Sassywares workflow dispatches: a grounding scout, an implementation worker, a reviewer, a simplifier, and a validator. Each agent is a Markdown file with frontmatter; in pi each one declares a `profiles:` list, so the same roster runs on DeepSeek by default and on Anthropic when a project opts in.
 
 The repo is `sassy-agents`. The npm mirror is `@sassywares/agents`.
 
@@ -38,11 +38,14 @@ Clone the repo next to your work and link the roster for your harness:
 git clone https://github.com/sassywares/sassy-agents.git
 ./sassy-agents/scripts/install.sh          # pi → ~/.pi/agent/agents/
 ./sassy-agents/scripts/install.sh claude   # Claude Code → ~/.claude/agents/
+./sassy-agents/scripts/install.sh hermes   # Hermes → ~/.hermes/agents/
 ```
 
 `sassy-setup` (in `sassy-skills`) checks for the roster and offers this link, or a per-project copy into `.pi/agents/` / `.claude/agents/`.
 
 `install.sh` symlinks `pi/*.md` into `~/.pi/agent/agents/`. Editing this repo changes the running agents on the next subagent invocation — there is no copy to keep in sync.
+
+Hermes has no user agent registry to link into, so `hermes/` is a convention rather than a discovery path: `install.sh hermes` links the roster into `~/.hermes/agents/`, and the orchestrating skill reads `<name>.md` from there, strips the frontmatter, and passes the body to `delegate_task` as the child's context. `HERMES_HOME` overrides the `.hermes` root and `HERMES_AGENTS_DIR` overrides the target directory outright.
 
 Then install the extensions that dispatch them, if you have not already:
 
@@ -73,6 +76,8 @@ Pi does not load agents from packages on its own; the link step is what makes th
 
 Each file's body is the system prompt. Keep it to the role, hard rules, scope, and return shape — the orchestrating skill supplies the task. The body is identical in every harness directory; only the frontmatter is harness-specific, and CI fails on drift.
 
+Hermes carries no per-agent model tier: `delegate_task` children run on the dispatcher's model, or on `delegation.model` when that is configured, so every `hermes/` agent declares `model: inherit` and the pi profiles' thinking levels collapse to `delegation.reasoning_effort`. Hermes also cannot restrict a child's toolsets per dispatch, so `tools:` there records intent — the read-only agents forbid writes in their body — rather than enforcing it structurally.
+
 ## How agents are found
 
 Claude Code discovers agents from `~/.claude/agents/` (user) and the project's `.claude/agents/` (project, which wins on a name clash).
@@ -83,6 +88,8 @@ In pi, the `subagent` extension discovers agents from:
 - The nearest project `.pi/agents/` — project scope, which overrides a user agent with the same name.
 
 `PI_AGENTS_DIR` overrides the user target when linking, which is useful in a container or a test harness. The extension's `agentScope` parameter (`user`, `project`, `both`) decides which of the two a dispatch sees; the default is `both`.
+
+Hermes has no agent registry. `install.sh hermes` links the roster into `~/.hermes/agents/`, and a dispatch is a `delegate_task` call whose child context is the agent's body — the orchestrating skill names the agent it wants and reads that file. Nothing in Hermes enumerates the directory, so an agent is available once the link exists and the skill reads the path.
 
 ## Model profiles
 
@@ -130,7 +137,7 @@ Every agent in a run reads one shared brief instead of exploring the repo for it
 
 ## Harness layout
 
-One directory per harness: `pi/` and `claude/`. Every directory carries the full roster with identical bodies; only frontmatter differs.
+One directory per harness: `pi/`, `claude/`, and `hermes/`. Every directory carries the full roster with identical bodies; only frontmatter differs.
 
 ```text
 sassy-agents/
@@ -141,6 +148,7 @@ sassy-agents/
 │   ├── simplifier.md
 │   └── validator.md
 ├── claude/              # Claude Code subagent definitions (same five)
+├── hermes/              # Hermes subagent definitions (same five)
 ├── scripts/
 │   ├── install.sh       # links one harness's agents into place
 │   ├── sync.sh          # bump, commit, push, tag
@@ -148,17 +156,17 @@ sassy-agents/
 └── …
 ```
 
-`scripts/install.sh <harness>` takes `pi` (the default) or `claude` and rejects a harness it does not know, rather than guessing a target directory.
+`scripts/install.sh <harness>` takes `pi` (the default), `claude`, or `hermes` and rejects a harness it does not know, rather than guessing a target directory.
 
 ## Adding or editing an agent
 
-1. Create or edit the agent in every harness directory: `pi/<name>.md` (`profiles:` or a pinned `model:`) and `claude/<name>.md` (Claude Code `tools` and a `model:` alias).
+1. Create or edit the agent in every harness directory: `pi/<name>.md` (`profiles:` or a pinned `model:`), `claude/<name>.md` (Claude Code `tools` and a `model:` alias), and `hermes/<name>.md` (Hermes tool names and `model: inherit`).
 2. Keep the frontmatter `name` equal to the file name.
 3. Keep the body focused on the role, hard rules, scope, and return shape — and byte-identical across harnesses.
 4. Update the roster table in `README.md`.
 5. Run `./scripts/install.sh` once if the agent is new, then `./scripts/sync.sh` to commit and release.
 
-Agents that write should say so in `tools:`: `scout` needs `write` (`Write` in Claude Code) for the brief, `worker` needs the full toolset. Reviewer, simplifier, and validator stay read-only so a review cannot change the diff it is judging.
+Agents that write should say so in `tools:`: `scout` needs `write` (`Write` in Claude Code, `write_file` in Hermes) for the brief, `worker` needs the full toolset. Reviewer, simplifier, and validator stay read-only so a review cannot change the diff it is judging.
 
 ## Repository layout
 
@@ -167,6 +175,8 @@ sassy-agents/
 ├── pi/
 │   └── *.md
 ├── claude/
+│   └── *.md
+├── hermes/
 │   └── *.md
 ├── scripts/
 │   ├── install.sh
@@ -187,6 +197,7 @@ sassy-agents/
 |---|---|
 | `pi/*.md` | The pi roster. Linked into `~/.pi/agent/agents/`. |
 | `claude/*.md` | The Claude Code roster. Linked into `~/.claude/agents/`. |
+| `hermes/*.md` | The Hermes roster. Linked into `~/.hermes/agents/`, read by the orchestrating skill. |
 | `scripts/install.sh` | Symlinks one harness's agents into that harness's user directory. |
 | `scripts/sync.sh` | Bumps, commits, pushes, tags, and releases. |
 | `scripts/test-profiles.mjs` | Checks agent parsing and profile resolution against the real roster plus malformed fixtures. |

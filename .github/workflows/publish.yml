@@ -74,7 +74,7 @@ jobs:
       - name: Validate agents
         run: |
           shopt -s nullglob
-          harnesses=(pi claude)
+          harnesses=(pi claude hermes)
           status=0
 
           for harness in "${harnesses[@]}"; do

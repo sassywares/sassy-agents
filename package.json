@@ -24,6 +24,7 @@
   "files": [
     "pi",
     "claude",
+    "hermes",
     "scripts",
     "README.md",
     "CONCEPTS.md",
