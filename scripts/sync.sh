@@ -21,7 +21,7 @@ LOCK_DIR="${TMPDIR:-/tmp}/sassy-agents-sync.lock"
 # tooling, CI, or AGENTS.md does not. `package.json` counts whole: it holds the
 # version and the shipped file list, so any edit to it is treated as shipped
 # rather than guessed at.
-PUBLISHED_PATHS=(pi claude README.md CONCEPTS.md GROUNDING.md NOTICE LICENSE package.json)
+PUBLISHED_PATHS=(pi claude hermes README.md CONCEPTS.md GROUNDING.md NOTICE LICENSE package.json)
 
 die() {
   echo "sassy-agents: $*" >&2
@@ -63,7 +63,7 @@ tag_exists() {
 published_drift() {
   local tag="v$1"
   [ -n "$(git diff --name-only "$tag" -- "${PUBLISHED_PATHS[@]}" 2>/dev/null || true)" ] && return 0
-  [ -n "$(git ls-files --others --exclude-standard -- pi claude 2>/dev/null || true)" ] && return 0
+  [ -n "$(git ls-files --others --exclude-standard -- pi claude hermes 2>/dev/null || true)" ] && return 0
   return 1
 }
 

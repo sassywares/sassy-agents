@@ -2,15 +2,15 @@
 
 ## What this repo is
 
-This repo is the source of truth for the Sassy subagent roster, laid out one directory per harness: `pi/` and `claude/` (Claude Code).
+This repo is the source of truth for the Sassy subagent roster, laid out one directory per harness: `pi/`, `claude/` (Claude Code), and `hermes/` (Hermes Agent).
 
 - Local: `~/Documents/Workspace/Sassywares/sassy-agents`
 - Remote: `sassywares/sassy-agents`
 - Package: `@sassywares/agents`
 
-Consumers clone this repo and run `scripts/install.sh <harness>`, which symlinks `<harness>/*.md` into that harness's user agent directory (`~/.pi/agent/agents/`, `~/.claude/agents/`). A project may instead vendor a harness folder into its own `.pi/agents/` or `.claude/agents/`; `sassy-setup` in `sassy-skills` offers both. Do not keep a second copy in the same scope: the harness would load two definitions of the same agent, and one would silently lose.
+Consumers clone this repo and run `scripts/install.sh <harness>`, which symlinks `<harness>/*.md` into that harness's user agent directory (`~/.pi/agent/agents/`, `~/.claude/agents/`, `~/.hermes/agents/`). A project may instead vendor a harness folder into its own `.pi/agents/` or `.claude/agents/`; `sassy-setup` in `sassy-skills` offers both. Do not keep a second copy in the same scope: the harness would load two definitions of the same agent, and one would silently lose.
 
-In pi, the roster is dispatched by the `subagent` extension in [`sassy-pi-extensions`](https://github.com/sassywares/sassy-pi-extensions), which owns discovery, parsing, and profile resolution. In Claude Code, the built-in Agent tool dispatches them by name. This repo owns the agents themselves.
+In pi, the roster is dispatched by the `subagent` extension in [`sassy-pi-extensions`](https://github.com/sassywares/sassy-pi-extensions), which owns discovery, parsing, and profile resolution. In Claude Code, the built-in Agent tool dispatches them by name. Hermes has no agent registry: the orchestrating skill reads `~/.hermes/agents/<name>.md`, strips the frontmatter, and passes the body to `delegate_task` as the child's context. This repo owns the agents themselves.
 
 ## Harnesses stay in sync
 
@@ -57,6 +57,8 @@ sassy-agents/
 │   └── worker.md
 ├── claude/
 │   └── (same five agents, Claude Code frontmatter)
+├── hermes/
+│   └── (same five agents, Hermes frontmatter)
 ├── scripts/
 │   ├── install.sh
 │   ├── sync.sh
@@ -76,6 +78,7 @@ sassy-agents/
 |---|---|
 | `pi/*.md` | The pi roster. Linked into `~/.pi/agent/agents/`. |
 | `claude/*.md` | The Claude Code roster. Linked into `~/.claude/agents/`. |
+| `hermes/*.md` | The Hermes roster. Linked into `~/.hermes/agents/`. |
 | `scripts/install.sh` | Symlinks one harness's agents into that harness's user directory. |
 | `scripts/sync.sh` | Bumps, commits, pushes, tags, and releases. See [Sync](#sync). |
 | `scripts/test-profiles.mjs` | Checks agent parsing and profile resolution against the real roster plus malformed fixtures. |

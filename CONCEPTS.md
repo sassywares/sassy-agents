@@ -2,7 +2,7 @@
 
 ## Source of truth
 
-Each harness directory is the only copy of that harness's roster. `scripts/install.sh <harness>` symlinks each file into the harness's user agent directory (`~/.pi/agent/agents/`, `~/.claude/agents/`), so the running agents are the working tree.
+Each harness directory is the only copy of that harness's roster. `scripts/install.sh <harness>` symlinks each file into the harness's user agent directory (`~/.pi/agent/agents/`, `~/.claude/agents/`, `~/.hermes/agents/`), so the running agents are the working tree.
 
 ## Agent
 
@@ -10,7 +10,7 @@ A Markdown file with `name` and `description` frontmatter, plus optional `tools`
 
 ## Harness
 
-A directory at the repo root named after the tool that consumes it: `pi/` for pi, `claude/` for Claude Code. Every harness directory holds the full roster. Harnesses differ in frontmatter and discovery only: an agent's body — what it does — is identical in every harness, and CI fails when it drifts.
+A directory at the repo root named after the tool that consumes it: `pi/` for pi, `claude/` for Claude Code, `hermes/` for Hermes Agent. Every harness directory holds the full roster. Harnesses differ in frontmatter and discovery only: an agent's body — what it does — is identical in every harness, and CI fails when it drifts.
 
 ## Roster
 

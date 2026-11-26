@@ -4,10 +4,13 @@
 #   ./scripts/install.sh          # pi, the default
 #   ./scripts/install.sh pi
 #   ./scripts/install.sh claude
+#   ./scripts/install.sh hermes
 #
 # Each harness discovers user-scope subagents from its own directory, so the
 # roster is linked rather than copied: editing this repo changes the running
-# agents, and there is never a second copy to drift.
+# agents, and there is never a second copy to drift. Hermes has no agent
+# registry of its own: the orchestrating skill reads the linked file by name and
+# passes its body to `delegate_task` as the child's context.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,8 +23,11 @@ case "$HARNESS" in
   claude)
     TARGET="${CLAUDE_AGENTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents}"
     ;;
+  hermes)
+    TARGET="${HERMES_AGENTS_DIR:-${HERMES_HOME:-$HOME/.hermes}/agents}"
+    ;;
   *)
-    echo "sassy-agents: unknown harness '$HARNESS' (supported: pi, claude)" >&2
+    echo "sassy-agents: unknown harness '$HARNESS' (supported: pi, claude, hermes)" >&2
     exit 1
     ;;
 esac
